@@ -39,6 +39,8 @@ BAGGAGE_HEADER_PREFIX = 'uberctx-' if six.PY3 else b'uberctx-'
 # be found in the UI using this value as a correlation ID.
 DEBUG_ID_HEADER_KEY = 'jaeger-debug-id'
 
+DEBUG_BAGGAGE_HEADER_KEY = 'jaeger-baggage'
+
 JAEGER_CLIENT_VERSION = 'Python-%s' % __version__
 
 # Tracer-scoped tag that tells the version of Jaeger client library

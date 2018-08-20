@@ -21,6 +21,7 @@ from opentracing import (
 from .constants import (
     BAGGAGE_HEADER_PREFIX,
     DEBUG_ID_HEADER_KEY,
+    DEBUG_BAGGAGE_HEADER_KEY,
     TRACE_ID_HEADER,
 )
 from .span_context import SpanContext
@@ -43,11 +44,13 @@ class TextCodec(Codec):
                  url_encoding=False,
                  trace_id_header=TRACE_ID_HEADER,
                  baggage_header_prefix=BAGGAGE_HEADER_PREFIX,
-                 debug_id_header=DEBUG_ID_HEADER_KEY):
+                 debug_id_header=DEBUG_ID_HEADER_KEY,
+                 debug_baggage_header=DEBUG_BAGGAGE_HEADER_KEY):
         self.url_encoding = url_encoding
         self.trace_id_header = trace_id_header.lower().replace('_', '-')
         self.baggage_prefix = baggage_header_prefix.lower().replace('_', '-')
         self.debug_id_header = debug_id_header.lower().replace('_', '-')
+        self.debug_baggage_header = debug_baggage_header.lower().replace('_', '-')
         self.prefix_length = len(baggage_header_prefix)
 
     def inject(self, span_context, carrier):
@@ -110,8 +113,17 @@ class TextCodec(Codec):
                 if self.url_encoding:
                     value = urllib_parse.unquote(value)
                 debug_id = value
-        if not trace_id and baggage:
-            raise SpanContextCorruptedException('baggage without trace ctx')
+            elif uc_key == self.debug_baggage_header:
+                if self.url_encoding:
+                    value = urllib_parse.unquote(value)
+                for part in value.split(','):
+                    kv = part.strip().split('=')
+                    if len(kv) == 2:
+                        if baggage is None:
+                            baggage = {}
+                        baggage[kv[0]] = kv[1]
+        # if not trace_id and baggage:
+        #     raise SpanContextCorruptedException('baggage without trace ctx')
         if not trace_id:
             if debug_id is not None:
                 return SpanContext.with_debug_id(debug_id=debug_id)
